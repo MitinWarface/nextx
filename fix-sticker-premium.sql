@@ -1,0 +1,1 @@
+ALTER TABLE "StickerPack" ADD COLUMN "isPremium" BOOLEAN NOT NULL DEFAULT false;

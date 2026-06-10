@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.env
+.env.local
+.env.production
+server.log
+server.err.log
+uploads/
+*.log
+.DS_Store
+thumbs.db

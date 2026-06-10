@@ -1,0 +1,3 @@
+CREATE USER appuser WITH PASSWORD 'pass';
+CREATE DATABASE messanger OWNER appuser;
+GRANT ALL PRIVILEGES ON DATABASE messanger TO appuser;

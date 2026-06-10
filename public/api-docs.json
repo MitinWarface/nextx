@@ -1,0 +1,437 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NextX API",
+    "description": "NextX Messenger API — полный набор эндпоинтов для мессенджера с чатами, звонками, E2EE, ботами и админкой.",
+    "version": "1.0.0",
+    "contact": { "name": "NextX Team" }
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local dev" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "next-auth.session-token"
+      }
+    },
+    "schemas": {
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "chatId": { "type": "string" },
+          "senderId": { "type": "string" },
+          "type": { "type": "string", "enum": ["TEXT", "IMAGE", "VIDEO", "FILE", "AUDIO", "VOICE", "STICKER", "SYSTEM", "LOCATION", "CONTACT", "POLL"] },
+          "content": { "type": "string" },
+          "mediaUrl": { "type": "string" },
+          "hlsUrl": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Chat": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["PRIVATE", "GROUP", "CHANNEL"] },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "username": { "type": "string" },
+          "displayName": { "type": "string" },
+          "avatarUrl": { "type": "string" },
+          "status": { "type": "string", "enum": ["ONLINE", "OFFLINE"] }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [{ "cookieAuth": [] }],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "email", "password", "displayName"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" },
+                  "displayName": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User created" },
+          "400": { "description": "Validation error" }
+        }
+      }
+    },
+    "/api/chats": {
+      "get": {
+        "tags": ["Chats"],
+        "summary": "List user chats",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of chats",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "chats": { "type": "array", "items": { "$ref": "#/components/schemas/Chat" } } } } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Chats"],
+        "summary": "Create a chat (private, group, or channel)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  { "type": "object", "properties": { "type": { "const": "PRIVATE" }, "otherUserId": { "type": "string" } } },
+                  { "type": "object", "properties": { "type": { "const": "GROUP" }, "name": { "type": "string" }, "memberIds": { "type": "array", "items": { "type": "string" } } } },
+                  { "type": "object", "properties": { "type": { "const": "CHANNEL" }, "name": { "type": "string" }, "isPrivate": { "type": "boolean" }, "maxSubscribers": { "type": "integer" } } }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Chat created" }
+        }
+      }
+    },
+    "/api/chats/{chatId}/messages": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "List messages in a chat",
+        "parameters": [
+          { "name": "chatId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "before", "in": "query", "schema": { "type": "string" }, "description": "Message ID for pagination" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of messages",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "messages": { "type": "array", "items": { "$ref": "#/components/schemas/Message" } } } } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Messages"],
+        "summary": "Send a message",
+        "parameters": [
+          { "name": "chatId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "enum": ["TEXT", "IMAGE", "VIDEO", "FILE", "AUDIO", "VOICE", "STICKER"] },
+                  "content": { "type": "string" },
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Message sent" }
+        }
+      }
+    },
+    "/api/uploads": {
+      "post": {
+        "tags": ["Media"],
+        "summary": "Upload a file (image, video, audio, document)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "File uploaded, returns URL" }
+        }
+      }
+    },
+    "/api/users/me/privacy": {
+      "get": {
+        "tags": ["Privacy"],
+        "summary": "Get privacy settings",
+        "responses": { "200": { "description": "Privacy settings" } }
+      },
+      "patch": {
+        "tags": ["Privacy"],
+        "summary": "Update privacy settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profileVisibility": { "type": "string", "enum": ["EVERYONE", "CONTACTS", "NOBODY"] },
+                  "lastSeenVisibility": { "type": "string" },
+                  "readReceipts": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      }
+    },
+    "/api/users/me/two-factor": {
+      "post": {
+        "tags": ["Security"],
+        "summary": "Setup, enable, or disable 2FA",
+        "parameters": [
+          { "name": "action", "in": "query", "required": true, "schema": { "type": "string", "enum": ["setup", "enable", "disable"] } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": { "type": "string", "description": "6-digit TOTP code" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Result" } }
+      }
+    },
+    "/api/secret-chats": {
+      "get": {
+        "tags": ["E2EE"],
+        "summary": "List secret chats",
+        "responses": { "200": { "description": "List of secret chats" } }
+      },
+      "post": {
+        "tags": ["E2EE"],
+        "summary": "Create a secret chat",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recipientId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Secret chat created" } }
+      }
+    },
+    "/api/wallet": {
+      "get": {
+        "tags": ["Wallet"],
+        "summary": "Get wallet balance and transactions",
+        "responses": { "200": { "description": "Wallet data" } }
+      },
+      "post": {
+        "tags": ["Wallet"],
+        "summary": "Top up wallet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": { "type": "integer", "description": "Amount in kopecks" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Wallet topped up" } }
+      }
+    },
+    "/api/gifts": {
+      "get": {
+        "tags": ["Gifts"],
+        "summary": "List received gifts",
+        "responses": { "200": { "description": "List of gifts" } }
+      },
+      "post": {
+        "tags": ["Gifts"],
+        "summary": "Send a gift",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "receiverId": { "type": "string" },
+                  "giftName": { "type": "string" },
+                  "emoji": { "type": "string" },
+                  "price": { "type": "integer" },
+                  "message": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Gift sent" } }
+      }
+    },
+    "/api/scheduled": {
+      "get": {
+        "tags": ["Scheduled"],
+        "summary": "List scheduled messages",
+        "responses": { "200": { "description": "List of scheduled messages" } }
+      },
+      "post": {
+        "tags": ["Scheduled"],
+        "summary": "Schedule a message",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["chatId", "content", "scheduledFor"],
+                "properties": {
+                  "chatId": { "type": "string" },
+                  "content": { "type": "string" },
+                  "scheduledFor": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Message scheduled" } }
+      }
+    },
+    "/api/admin/stats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get admin dashboard stats",
+        "responses": { "200": { "description": "Stats" } }
+      }
+    },
+    "/api/admin/analytics": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get analytics data (charts)",
+        "responses": { "200": { "description": "Analytics data" } }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all users (admin)",
+        "responses": { "200": { "description": "User list" } }
+      }
+    },
+    "/api/admin/chats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all chats (admin)",
+        "responses": { "200": { "description": "Chat list" } }
+      }
+    },
+    "/api/support": {
+      "get": {
+        "tags": ["Support"],
+        "summary": "List support tickets",
+        "responses": { "200": { "description": "List of tickets" } }
+      },
+      "post": {
+        "tags": ["Support"],
+        "summary": "Create support ticket",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["subject", "message"],
+                "properties": {
+                  "subject": { "type": "string" },
+                  "message": { "type": "string" },
+                  "category": { "type": "string", "enum": ["GENERAL", "BUG", "FEATURE", "PAYMENT", "OTHER"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Ticket created" } }
+      }
+    },
+    "/api/livekit": {
+      "post": {
+        "tags": ["Calls"],
+        "summary": "Get LiveKit room token for SFU calls",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["room", "identity"],
+                "properties": {
+                  "room": { "type": "string" },
+                  "identity": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Token" } }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Auth", "description": "Authentication & registration" },
+    { "name": "Chats", "description": "Chat CRUD" },
+    { "name": "Messages", "description": "Send & list messages" },
+    { "name": "Media", "description": "File uploads" },
+    { "name": "Privacy", "description": "Privacy settings" },
+    { "name": "Security", "description": "2FA & security" },
+    { "name": "E2EE", "description": "End-to-end encryption" },
+    { "name": "Wallet", "description": "NextCoin wallet" },
+    { "name": "Gifts", "description": "Gift sending" },
+    { "name": "Scheduled", "description": "Scheduled messages" },
+    { "name": "Admin", "description": "Admin panel" },
+    { "name": "Support", "description": "Support tickets" },
+    { "name": "Calls", "description": "Voice/video calls via LiveKit SFU" }
+  ]
+}

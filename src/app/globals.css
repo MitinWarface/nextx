@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+ * NextX — Telegram Web A palette (Light / Dark)
+ * Токены строго по HEX, переведённые в HSL для Tailwind.
+ * ============================================================ */
+
+@layer base {
+  :root {
+    /* === LIGHT THEME === */
+    --background: 0 0% 100%;            /* #FFFFFF */
+    --foreground: 0 0% 0%;              /* #000000 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 214 81% 52%;             /* #3390EC */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;              /* #F4F4F5 */
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 56%;       /* #8E8E93 */
+
+    --accent: 0 0% 96%;                 /* #F4F4F5 */
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 85% 57%;           /* #FF3B30 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 92%;                 /* #EBEBEB */
+    --input: 0 0% 92%;
+    --ring: 214 81% 52%;
+
+    /* === MESSENGER SURFACES === */
+    --panel: 0 0% 100%;
+    --panel-sidebar: 0 0% 100%;
+    --panel-chat: 210 12% 89%;          /* #E6EBEE */
+
+    /* === BUBBLES === */
+    --bubble-incoming: 0 0% 100%;       /* #FFFFFF */
+    --bubble-incoming-fg: 0 0% 0%;
+    --bubble-outgoing: 110 100% 91%;    /* #EEFFDE */
+    --bubble-outgoing-fg: 0 0% 0%;
+
+    --online: 142 73% 48%;              /* #34C759 */
+
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-accent: 214 75% 92%;      /* #D6ECFA */
+    --sidebar-border: 0 0% 92%;
+
+    --chat-bg: 210 12% 89%;             /* #E6EBEE */
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* === DARK THEME — Telegram Web A Night === */
+    --background: 222 11% 12%;          /* #17212B */
+    --foreground: 0 0% 100%;            /* #FFFFFF */
+
+    --card: 222 11% 15%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 222 11% 15%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 214 57% 62%;             /* #6AB2F2 */
+    --primary-foreground: 222 11% 12%;
+
+    --secondary: 0 0% 12%;              /* #1E1E1E */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 16%;                  /* #282828 */
+    --muted-foreground: 0 0% 56%;       /* #8E8E93 */
+
+    --accent: 0 0% 17%;                 /* #2C2C2E */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 85% 57%;           /* #FF453A */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 228 8% 19%;               /* #303030 */
+    --input: 0 0% 17%;                  /* #2C2C2E */
+    --ring: 214 57% 62%;
+
+    --panel: 222 11% 12%;
+    --panel-sidebar: 220 9% 11%;        /* #1C1C1E */
+    --panel-chat: 222 14% 6%;           /* #0E1015 */
+
+    --bubble-incoming: 213 46% 14%;     /* #182533 */
+    --bubble-incoming-fg: 0 0% 100%;
+    --bubble-outgoing: 211 44% 32%;     /* #2B5278 */
+    --bubble-outgoing-fg: 0 0% 100%;
+
+    --online: 142 73% 52%;              /* #4CD964 */
+
+    --sidebar: 220 9% 11%;             /* #1C1C1E */
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-accent: 220 10% 17%;      /* #2B3038 */
+    --sidebar-border: 228 8% 19%;
+
+    --chat-bg: 222 14% 6%;              /* #0E1015 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    @apply h-full bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  body {
+    font-family: var(--font-sans), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/25 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+@layer utilities {
+  /* Хвостик пузыря (Telegram-style) */
+  .bubble-tail-in::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    bottom: 0;
+    width: 12px;
+    height: 18px;
+    background: inherit;
+    clip-path: path("M12 0 L0 0 L12 18 Z");
+  }
+  .bubble-tail-out::after {
+    content: "";
+    position: absolute;
+    right: -6px;
+    bottom: 0;
+    width: 12px;
+    height: 18px;
+    background: inherit;
+    clip-path: path("M0 0 L12 0 L0 18 Z");
+  }
+
+  /* Подсветка целевого сообщения при переходе по reply-цитате */
+  @keyframes message-flash {
+    0% {
+      background-color: hsl(var(--primary) / 0.22);
+    }
+    60% {
+      background-color: hsl(var(--primary) / 0.12);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  .message-flash {
+    animation: message-flash 1.5s ease-out;
+    border-radius: 0.75rem;
+  }
+
+  /* Folder tabs active indicator */
+  .folder-tab-active {
+    position: relative;
+  }
+  .folder-tab-active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    border-radius: 3px;
+    background: hsl(var(--primary));
+  }
+
+  /* Content protection (anti-screenshot, anti-forward) */
+  .protected-content {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .protected-content img,
+  .protected-content video {
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  .protected-content .protected-overlay {
+    pointer-events: none;
+  }
+
+  /* Spoiler text — click to reveal */
+  .spoiler {
+    background: currentColor;
+    color: transparent;
+    border-radius: 4px;
+    padding: 0 3px;
+    cursor: pointer;
+    filter: blur(5px);
+    transition: filter 0.3s ease, color 0.3s ease;
+    user-select: none;
+    display: inline;
+    line-height: inherit;
+  }
+  .spoiler:hover {
+    filter: blur(3px);
+  }
+  .spoiler.revealed {
+    filter: none;
+    color: inherit;
+    cursor: default;
+    background: transparent;
+  }
+
+  /* Reaction pop animation */
+  @keyframes reaction-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+  .animate-reaction-pop {
+    animation: reaction-pop 0.3s ease-in-out;
+  }
+}
