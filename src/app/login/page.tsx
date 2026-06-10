@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import { signIn } from "next-auth/react";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -24,20 +24,26 @@ function LoginForm() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await signIn("credentials", {
-        username: username.trim(),
-        password,
-        redirect: false,
-        callbackUrl,
+      const csrfRes = await fetch("/api/auth/csrf", { credentials: "include" });
+      const { csrfToken } = await csrfRes.json();
+      const fd = new FormData();
+      fd.append("csrfToken", csrfToken);
+      fd.append("username", username.trim());
+      fd.append("password", password);
+      fd.append("redirect", "false");
+      fd.append("json", "true");
+      const res = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
       });
-      if (res?.error) {
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
         setError("Неверный логин или пароль");
         return;
       }
-      if (res?.ok) {
-        router.push(res.url ?? callbackUrl);
-        router.refresh();
-      }
+      router.push(callbackUrl);
+      router.refresh();
     } catch {
       setError("Ошибка сети. Попробуйте ещё раз.");
     } finally {

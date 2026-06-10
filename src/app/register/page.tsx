@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import { signIn } from "next-auth/react";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -52,15 +52,22 @@ function RegisterForm() {
         return;
       }
 
-      const loginRes = await signIn("credentials", {
-        username: username.trim(),
-        password,
-        redirect: false,
-        callbackUrl,
+      const csrfRes2 = await fetch("/api/auth/csrf", { credentials: "include" });
+      const { csrfToken: csrfToken2 } = await csrfRes2.json();
+      const fd = new FormData();
+      fd.append("csrfToken", csrfToken2);
+      fd.append("username", username.trim());
+      fd.append("password", password);
+      fd.append("redirect", "false");
+      fd.append("json", "true");
+      const loginRes = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
       });
       setIsSubmitting(false);
-      if (loginRes?.ok) {
-        router.push(loginRes.url ?? callbackUrl);
+      if (loginRes.ok) {
+        router.push(callbackUrl);
         router.refresh();
       } else {
         setError("Аккаунт создан, но вход не удался. Попробуйте войти.");

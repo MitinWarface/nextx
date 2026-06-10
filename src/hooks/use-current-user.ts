@@ -1,14 +1,18 @@
-/**
- * Хук: текущий пользователь из NextAuth session.
- * Возвращает user из JWT (id), затем подтягивает PublicUser с сервера.
- * Также синхронизирует useAuthStore (используется в других хуках).
- */
 "use client";
 
 import * as React from "react";
-import { useSession } from "next-auth/react";
 import { useAuthStore, type CurrentUser } from "@/store/auth-store";
 import type { PublicUser } from "@/types";
+
+async function fetchSession(): Promise<{ user?: { id?: string } } | null> {
+  try {
+    const res = await fetch("/api/auth/session", { credentials: "include" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
 async function fetchMe(): Promise<PublicUser | null> {
   const res = await fetch("/api/users/me", { credentials: "include" });
@@ -16,14 +20,13 @@ async function fetchMe(): Promise<PublicUser | null> {
   return (await res.json()) as PublicUser;
 }
 
-function toCurrentUser(p: PublicUser, session?: ReturnType<typeof useSession>["data"]): CurrentUser {
+function toCurrentUser(p: PublicUser): CurrentUser {
   return {
     id: p.id,
     username: p.username,
     displayName: p.displayName,
     avatarUrl: p.avatarUrl,
-    role: p.role ?? (session?.user as any)?.role ?? undefined,
-    features: (session?.user as any)?.features ?? undefined,
+    role: p.role ?? undefined,
   };
 }
 
@@ -32,12 +35,27 @@ export function useCurrentUser(): {
   isLoading: boolean;
   refresh: () => Promise<void>;
 } {
-  const { data: session, status } = useSession();
   const setStoreUser = useAuthStore((s) => s.setUser);
   const setStoreLoading = useAuthStore((s) => s.setLoading);
   const [user, setUser] = React.useState<PublicUser | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
+  const [authenticated, setAuthenticated] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetchSession().then((s) => {
+      if (cancelled) return;
+      const hasUser = !!s?.user?.id;
+      setAuthenticated(hasUser);
+      if (!hasUser) {
+        setUser(null);
+        setStoreUser(null);
+        setIsLoading(false);
+        setStoreLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [setStoreUser, setStoreLoading]);
 
   const refresh = React.useCallback(async () => {
     setIsLoading(true);
@@ -46,8 +64,7 @@ export function useCurrentUser(): {
       const u = await fetchMe();
       setUser(u);
       if (u) {
-        setStoreUser(toCurrentUser(u, session));
-        // Register device on login
+        setStoreUser(toCurrentUser(u));
         try {
           await fetch("/api/auth/device", {
             method: "POST",
@@ -61,23 +78,13 @@ export function useCurrentUser(): {
       setIsLoading(false);
       setStoreLoading(false);
     }
-  }, [setStoreUser, setStoreLoading, session]);
+  }, [setStoreUser, setStoreLoading]);
 
   React.useEffect(() => {
-    if (status === "loading") {
-      setIsLoading(true);
-      setStoreLoading(true);
-      return;
-    }
-    if (status === "unauthenticated" || !sessionUserId) {
-      setUser(null);
-      setStoreUser(null);
-      setIsLoading(false);
-      setStoreLoading(false);
-      return;
-    }
+    if (authenticated === null) return;
+    if (!authenticated) return;
     void refresh();
-  }, [sessionUserId, status, refresh, setStoreUser, setStoreLoading]);
+  }, [authenticated, refresh]);
 
   return { user, isLoading, refresh };
 }
