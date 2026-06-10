@@ -128,20 +128,6 @@ function LoginForm() {
           </Button>
         </Link>
 
-        <div className="mt-4 rounded-md bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
-          <div className="font-medium">Dev-аккаунты:</div>
-          <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5">
-            <span>me</span>
-            <span>password123</span>
-            <span>david_moore</span>
-            <span>password123</span>
-            <span>jessica_drew</span>
-            <span>password123</span>
-            <span>greg_james</span>
-            <span>password123</span>
-          </div>
-        </div>
-
         <p className="mt-3 text-center text-xs text-muted-foreground">
           Нет аккаунта?{" "}
           <Link href="/register" className="text-primary hover:underline">
